@@ -79,6 +79,7 @@ pub fn decrypt_cbc(cipher_t:&Vec<u8>, key:&Vec<u8>, iv:&Vec<u8>) -> Vec<u8> {
 
 pub fn encryption_oracle(plain_t:&Vec<u8>) -> (Vec<u8>, &str) {
     let iv = bytewise::make_rand_vec(16);
+    let key = bytewise::make_rand_vec(16);
     let start_rand: u32 = rand::random();
     let end_rand: u32 = rand::random();
     let start_pad_len = 5 + (start_rand % 6);
@@ -89,10 +90,6 @@ pub fn encryption_oracle(plain_t:&Vec<u8>) -> (Vec<u8>, &str) {
     padded_t.append(&mut start_pad);
     padded_t.append(&mut plain_t.clone());
     padded_t.append(&mut end_pad);
-    let mut key = Vec::with_capacity(16);
-    for _ in 0..16 {
-        key.push(rand::random());
-    }
     if rand::random() {
         (encrypt_cbc(&plain_t, &key, &iv), "cbc")
     } else {

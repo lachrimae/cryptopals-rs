@@ -290,3 +290,6 @@ Kant retired from teaching in 1796. For nearly two decades he had lived a highly
     }
     println!("Guessed {:.1}% of attempts correctly", (guesses_right / guesses as f64) * 100.0);
 }
+
+pub fn set_twelve() {
+}
