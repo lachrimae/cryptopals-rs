@@ -27,12 +27,12 @@ pub fn break_vigenere(ciphertext:&Vec<u8>) -> Vec<u8> {
     println!("lowest_len: {}", lowest_len);
 
     let blocks = bytewise::make_blocks(&ciphertext, lowest_len);
-    let mut t_blocks = bytewise::transpose(&blocks);
+    let t_blocks = bytewise::transpose(&blocks);
     assert_eq!(t_blocks, bytewise::transpose(&blocks));
 
     let mut t_blocks_solved = Vec::with_capacity(lowest_len);
 
-    for (i, t_block) in t_blocks.iter().enumerate() {
+    for t_block in t_blocks.iter() {
         t_blocks_solved.push(break_single_xor(&t_block));
     }
     bytewise::concat_blocks(&bytewise::transpose(&t_blocks_solved))

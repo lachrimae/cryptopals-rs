@@ -46,7 +46,7 @@ pub fn eng_score(eng_passage:String, euclidean:bool) -> f64 {
         .filter(|c| *c == ' ')
         .collect::<String>()
         .len() == 0;
-    let no_spaces_cost = 0.0; //if no_spaces_present { 5.0 } else { 0.0 };
+    let no_spaces_cost = if no_spaces_present { 5.0 } else { 0.0 };
     let uppercase_rate = eng_passage
         .chars()
         .filter(char::is_ascii_uppercase)

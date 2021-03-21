@@ -52,7 +52,7 @@ fn set_three(ciphertext:Option<String>) {
     let mut dists = HashMap::new();
     let mut default_run = false;
     if ciphertext == None {
-        let default_run = true;
+        default_run = true;
     }
     let x = match ciphertext {
         Some(x) => hex::from_hex(&x),
@@ -89,7 +89,6 @@ fn set_three(ciphertext:Option<String>) {
     for _ in 0..l {
         cs.push(letters[0]);
     }
-    bytewise::xor(&x, &cs).iter().map(|c| *c as char).collect::<String>();
 }
 
 fn set_four() {
