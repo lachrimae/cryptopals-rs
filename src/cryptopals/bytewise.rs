@@ -1,3 +1,5 @@
+extern crate rand;
+
 use std::vec::Vec;
 
 pub fn xor(bs1:&Vec<u8>, bs2:&Vec<u8>) -> Vec<u8> {
@@ -7,6 +9,22 @@ pub fn xor(bs1:&Vec<u8>, bs2:&Vec<u8>) -> Vec<u8> {
         out.push(a ^ b);
     }
     out
+}
+
+pub fn make_null_vec(len:usize) -> Vec<u8> {
+    let mut iv = Vec::with_capacity(len);
+    for _ in 0..len {
+        iv.push(0);
+    }
+    iv
+}
+
+pub fn make_rand_vec(len:usize) -> Vec<u8> {
+    let mut iv = Vec::with_capacity(len);
+    for _ in 0..len {
+        iv.push(rand::random());
+    }
+    iv
 }
 
 pub fn xor_rep(bs1:&Vec<u8>, rep:&Vec<u8>) -> Vec<u8> {
@@ -85,6 +103,18 @@ pub fn concat_blocks(bss:&Vec<Vec<u8>>) -> Vec<u8> {
         }
     }
     out
+}
+
+pub fn has_duplicates(bss:&Vec<Vec<u8>>) -> bool {
+    let l = bss.len();
+    for i in 0..l {
+        for j in (i+1)..l {
+            if bss[i] == bss[j] {
+                return true
+            }
+        }
+    }
+    return false
 }
 
 #[cfg(test)]

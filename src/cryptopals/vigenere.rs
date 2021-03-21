@@ -68,7 +68,7 @@ pub fn break_single_xor(ciphertext:&Vec<u8>) -> Vec<u8> {
 #[cfg(test)]
 mod tests {
     fn make_p_text() -> String {
-       String::from("Every day I wake up and imagine what it's like to be a larger animal, such as a giant or a corn eater. Never have I ever been to the largest of the capitols of the countries of the world. My favourite food to eat is whatever is one the table. Necessary evils cause unnecessary suffering.")
+       String::from("In the morning I walked down the Boulevard to the rue Soufflot for coffee and brioche. It was a fine morning. The horse-chestnut trees in the Luxembourg gardens were in bloom. There was the pleasant early-morning feeling of a hot day. I read the papers with the coffee and then smoked a cigarette. The flower-women were coming up from the market and arranging their daily stock. Students went by going up to the law school, or down to the Sorbonne. The Boulevard was busy with trams and people going to work")
     }
 
     #[test]
@@ -89,6 +89,5 @@ mod tests {
         let key = Vec::from([1, 2, 3, 4, 5, 6]);
         let c_text = super::bytewise::xor_rep(&super::bytewise::from_ascii(&p_text), &key);
         assert_eq!(p_text, super::bytewise::to_ascii(&super::break_vigenere(&super::bytewise::from_ascii(&p_text))));
-        println!("{}", super::bytewise::to_ascii(&super::break_vigenere(&super::bytewise::from_ascii(&p_text))));
     }
 }

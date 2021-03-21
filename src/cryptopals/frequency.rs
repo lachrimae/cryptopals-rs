@@ -30,7 +30,7 @@ const ENG_FREQS: [(char, f64); 26] = [
     ('z', 0.00074)
 ];
 
-pub fn eng_score(eng_passage:String, euclidean:bool) -> f64 {
+pub fn eng_score(eng_passage:String, _euclidean:bool) -> f64 {
     assert_ne!(eng_passage.len(), 0);
     let mut eng_freqs: HashMap<char, f64> = HashMap::with_capacity(26);
     for (c, freq) in ENG_FREQS.iter() {
