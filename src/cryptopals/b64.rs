@@ -88,7 +88,7 @@ pub fn to_b64(bs:&Vec<u8>) -> String {
         } else if b == None {
             let a = a.unwrap();
             let x = to_b64_char(&(a >> 2));
-            let y = to_b64_char(&(a << 6));
+            let y = to_b64_char(&((a % 4) << 4));
             s.push(x); s.push(y);
             s.push_str("==");
             break
@@ -156,4 +156,27 @@ pub fn from_b64(s:String) -> Vec<u8> {
         }
     }
     bs
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn from_b64_works() {
+        let t1 = super::super::bytewise::from_ascii(&String::from("Man"));
+        let t2 = super::super::bytewise::from_ascii(&String::from("Ma"));
+        let t3 = super::super::bytewise::from_ascii(&String::from("M"));
+        assert_eq!(super::to_b64(&t1), String::from("TWFu"));
+        assert_eq!(super::to_b64(&t2), String::from("TWE="));
+        assert_eq!(super::to_b64(&t3), String::from("TQ=="));
+    }
+
+    #[test]
+    fn to_b64_works() {
+        let t1 = String::from("TWFu");
+        let t2 = String::from("TWE=");
+        let t3 = String::from("TQ==");
+        assert_eq!(super::from_b64(t1), super::super::bytewise::from_ascii(&String::from("Man")));
+        assert_eq!(super::from_b64(t2), super::super::bytewise::from_ascii(&String::from("Ma")));
+        assert_eq!(super::from_b64(t3), super::super::bytewise::from_ascii(&String::from("M")));
+    }
 }

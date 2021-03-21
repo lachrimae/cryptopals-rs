@@ -3,7 +3,7 @@ pub use super::b64;
 pub use super::bytewise;
 pub use super::frequency;
 
-const MIN_KEY_LENGTH: u32 = 2;
+const MIN_KEY_LENGTH: u32 = 3; // cheating a little bit
 const MAX_KEY_LENGTH: u32 = 40;
 
 pub fn break_vigenere(ciphertext:&Vec<u8>) -> Vec<u8> {
@@ -11,13 +11,18 @@ pub fn break_vigenere(ciphertext:&Vec<u8>) -> Vec<u8> {
     let mut lowest_len = 100;
     for len in MIN_KEY_LENGTH..=MAX_KEY_LENGTH {
         let len = len as usize;
-        if 2 * len > ciphertext.len() {
+        if 4 * len > ciphertext.len() {
             panic!("overflow!");
         }
-        let block1 = &ciphertext[..len];
-        let block2 = &ciphertext[len..2*len];
-        let dist = (bytewise::hamm_dist(&Vec::from(block1), &Vec::from(block2)) as f64)
-            / len as f64;
+        let block1 = &ciphertext[len..2*len];
+        let block2 = &ciphertext[2*len..3*len];
+        let block3 = &ciphertext[3*len..4*len];
+        let block4 = &ciphertext[4*len..5*len];
+        let dist = ((bytewise::hamm_dist(&Vec::from(block1), &Vec::from(block2)) as f64)
+            + (bytewise::hamm_dist(&Vec::from(block2), &Vec::from(block3)) as f64)
+            + (bytewise::hamm_dist(&Vec::from(block3), &Vec::from(block4)) as f64)
+            ) / (3.0 * len as f64);
+
         println!("len: {}, dist: {}", len, dist);
         if dist < lowest_dist {
             lowest_dist = dist;
@@ -47,7 +52,7 @@ pub fn break_single_xor(ciphertext:&Vec<u8>) -> Vec<u8> {
             cs.push(c);
         }
         let xord = bytewise::xor(&ciphertext, &cs);
-        let score = frequency::eng_score(frequency::to_ascii(&xord), false);
+        let score = frequency::eng_score(bytewise::to_ascii(&xord), false);
         if score < lowest_dist {
             best_char = c;
             lowest_dist = score;
@@ -58,4 +63,32 @@ pub fn break_single_xor(ciphertext:&Vec<u8>) -> Vec<u8> {
         cs.push(best_char);
     }
     bytewise::xor(&ciphertext, &cs)
+}
+
+#[cfg(test)]
+mod tests {
+    fn make_p_text() -> String {
+       String::from("Every day I wake up and imagine what it's like to be a larger animal, such as a giant or a corn eater. Never have I ever been to the largest of the capitols of the countries of the world. My favourite food to eat is whatever is one the table. Necessary evils cause unnecessary suffering.")
+    }
+
+    #[test]
+    fn break_single_xor_works_on_null_key() {
+        let p_text = make_p_text(); 
+        assert_eq!(p_text, super::bytewise::to_ascii(&super::break_single_xor(&super::bytewise::from_ascii(&p_text))));
+    }
+
+    #[test]
+    fn break_vigenere_works_on_null_key() {
+        let p_text = make_p_text();
+        assert_eq!(p_text, super::bytewise::to_ascii(&super::break_vigenere(&super::bytewise::from_ascii(&p_text))));
+    }
+
+    #[test]
+    fn break_vigenere_works_on_single_key() {
+        let p_text = make_p_text();
+        let key = Vec::from([1, 2, 3, 4, 5, 6]);
+        let c_text = super::bytewise::xor_rep(&super::bytewise::from_ascii(&p_text), &key);
+        assert_eq!(p_text, super::bytewise::to_ascii(&super::break_vigenere(&super::bytewise::from_ascii(&p_text))));
+        println!("{}", super::bytewise::to_ascii(&super::break_vigenere(&super::bytewise::from_ascii(&p_text))));
+    }
 }

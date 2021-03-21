@@ -2,15 +2,22 @@ mod cryptopals;
 
 #[macro_use]
 extern crate clap;
+extern crate aes;
+extern crate block_modes;
 
 use std::collections::HashMap;
 use std::fs;
+
+use aes::Aes128;
+use block_modes::{BlockMode, Ecb};
+use block_modes::block_padding::Pkcs7;
 
 pub use cryptopals::hex;
 pub use cryptopals::b64;
 pub use cryptopals::bytewise;
 pub use cryptopals::frequency;
 pub use cryptopals::vigenere;
+pub use cryptopals::padding;
 
 fn main() {
     let matches = clap_app!(myapp =>
@@ -27,6 +34,9 @@ fn main() {
         Some("4") => set_four(),
         Some("5") => set_five(),
         Some("6") => set_six(),
+        Some("7") => set_seven(),
+        Some("8") => set_eight(),
+        Some("9") => set_nine(),
         _ => {
             set_one();
             set_two();
@@ -34,6 +44,9 @@ fn main() {
             set_four();
             set_five();
             set_six();
+            set_seven();
+            set_eight();
+            set_nine();
         }
     }
 }
@@ -150,11 +163,73 @@ fn set_six() {
     assert_eq!(b64::from_b64(b64::to_b64(&t1)), t1);
     assert_eq!(b64::to_b64(&b64::from_b64(b64::to_b64(&t1))), b64::to_b64(&t1));
 
-    let ciphertext = b64::from_b64(fs::read_to_string("./data/1-6.txt")
-                                   .expect("no file for 1-6.txt!")
-                                   .chars()
-                                   .filter(|c| *c != '\n')
-                                   .collect());
+    let ciphertext = get_linewrapped_b64("./data/1-6.txt");
     let blocks = vigenere::break_vigenere(&ciphertext);
-    println!("{}", frequency::to_ascii(&blocks));
+    assert_eq!(bytewise::to_ascii(&blocks)[..10], "I'm back and I'm ringin' the bell"[..10]);
+    println!("{}", bytewise::to_ascii(&blocks));
+}
+
+fn get_linewrapped_b64(filename:&str) -> Vec<u8> {
+    b64::from_b64(
+        fs::read_to_string(filename)
+        .expect("file not found")
+        .chars()
+        .filter(|c| *c != '\n')
+        .collect())
+}
+
+fn get_many_hex(filename:&str) -> Vec<Vec<u8>> {
+    fs::read_to_string(filename)
+        .expect("file not found")
+        .split("\n")
+        .map(hex::from_hex)
+        .collect()
+}
+
+fn set_seven() {
+    type Aes128Ecb = Ecb<Aes128, Pkcs7>;
+    let key = bytewise::from_ascii(&String::from("YELLOW SUBMARINE"));
+    let l = key.len();
+    let mut iv = Vec::new();
+    for _ in 0..l {
+        iv.push(0);
+    }
+    let mut cipher_t = get_linewrapped_b64("./data/1-7.txt");
+    let cipher = Aes128Ecb::new_var(&key, &iv).unwrap();
+    let plain_t = cipher.decrypt(&mut cipher_t).unwrap();
+    println!("{}", bytewise::to_ascii(&Vec::from(plain_t)));
+}
+
+fn set_eight() {
+    let cipher_ts = get_many_hex("./data/1-8.txt");
+    let mut num_ecbs = 0;
+    let mut ecb_index = 0;
+    for (i, cipher_t) in cipher_ts.iter().enumerate() {
+        let blocks = bytewise::make_blocks(&cipher_t, 16);
+        let mut is_ecb = false;
+        for i in 0..blocks.len() {
+            for j in (i + 1)..blocks.len() {
+                if blocks[i] == blocks[j] {
+                    is_ecb = true;
+                }
+            }
+        }
+        if is_ecb {
+            num_ecbs += 1;
+            ecb_index = i;
+        }
+    }
+    if num_ecbs == 1 {
+        println!("The ecb ciphertext index is {:#?}", ecb_index);
+    } else {
+        println!("Didn't find the (unambiguous) ecb-encoded ciphertext.");
+    }
+}
+
+fn set_nine() {
+    let mut manual = bytewise::from_ascii(&String::from("YELLOW SUBMARINE"));
+    manual.push(4); manual.push(4); manual.push(4); manual.push(4);
+    let mut via_library = bytewise::from_ascii(&String::from("YELLOW SUBMARINE"));
+    padding::pkcs7(&mut via_library, 20);
+    assert_eq!(via_library, manual);
 }

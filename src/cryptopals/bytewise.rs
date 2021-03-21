@@ -50,6 +50,14 @@ pub fn transpose(bss:&Vec<Vec<u8>>) -> Vec<Vec<u8>> {
     out
 }
 
+pub fn to_ascii(bytes:&Vec<u8>) -> String {
+    bytes.iter().map(|u| *u as char).collect()
+}
+
+pub fn from_ascii(string:&String) -> Vec<u8> {
+    string.chars().map(|c| c as u8).collect()
+}
+
 pub fn make_blocks(bs:&Vec<u8>, size:usize) -> Vec<Vec<u8>> {
     let mut blocks = Vec::with_capacity(1 + (bs.len() / size));
     let mut bytes_processed = 0;
