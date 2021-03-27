@@ -5,3 +5,4 @@ pub mod frequency;
 pub mod vigenere;
 pub mod padding;
 pub mod aes;
+pub mod attack_aes;

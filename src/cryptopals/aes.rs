@@ -91,8 +91,19 @@ pub fn encryption_oracle(plain_t:&Vec<u8>) -> (Vec<u8>, &str) {
     padded_t.append(&mut plain_t.clone());
     padded_t.append(&mut end_pad);
     if rand::random() {
-        (encrypt_cbc(&plain_t, &key, &iv), "cbc")
+        (encrypt_cbc(&padded_t, &key, &iv), "cbc")
     } else {
-        (encrypt_ecb(&plain_t, &key), "ecb")
+        (encrypt_ecb(&padded_t, &key), "ecb")
     }
+}
+
+pub fn encryption_oracle_no_rand(plain_t:&Vec<u8>, key:&Vec<u8>) -> () { //(Vec<u8>, String) {
+    //let encrypt_ecb(&plain_t, &key)
+}
+
+pub fn encrypt_ecb_appended(plain_t1:&Vec<u8>, plain_t2:&Vec<u8>, key:&Vec<u8>) -> Vec<u8> {
+    let mut plain_t = plain_t1.clone();
+    let mut suffix = plain_t2.clone();
+    plain_t.append(&mut suffix);
+    encrypt_ecb(&plain_t, &key)
 }

@@ -88,6 +88,6 @@ mod tests {
         let p_text = make_p_text();
         let key = Vec::from([1, 2, 3, 4, 5, 6]);
         let c_text = super::bytewise::xor_rep(&super::bytewise::from_ascii(&p_text), &key);
-        assert_eq!(p_text, super::bytewise::to_ascii(&super::break_vigenere(&super::bytewise::from_ascii(&p_text))));
+        assert_eq!(p_text, super::bytewise::to_ascii(&super::break_vigenere(&c_text)));
     }
 }

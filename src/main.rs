@@ -12,6 +12,7 @@ pub use cryptopals::bytewise;
 pub use cryptopals::frequency;
 pub use cryptopals::vigenere;
 pub use cryptopals::aes;
+pub use cryptopals::attack_aes;
 pub use cryptopals::padding;
 
 fn main() {
@@ -34,6 +35,7 @@ fn main() {
         Some("9") => set_nine(),
         Some("10") => set_ten(),
         Some("11") => set_eleven(),
+        Some("12") => set_twelve(),
         _ => {
             set_one();
             set_two();
@@ -46,6 +48,7 @@ fn main() {
             set_nine();
             set_ten();
             set_eleven();
+            set_twelve();
         }
     }
 }
@@ -275,6 +278,23 @@ After 1770 Kant never surrendered the views that sensibility and understanding a
 With these works Kant secured international fame and came to dominate German philosophy in the late 1780s. But in 1790 he announced that the Critique of the Power of Judgment brought his critical enterprise to an end (5:170). By then K. L. Reinhold (1758–1823), whose Letters on the Kantian Philosophy (1786) popularized Kant’s moral and religious ideas, had been installed (in 1787) in a chair devoted to Kantian philosophy at Jena, which was more centrally located than Königsberg and rapidly developing into the focal point of the next phase in German intellectual history. Reinhold soon began to criticize and move away from Kant’s views. In 1794 his chair at Jena passed to J. G. Fichte, who had visited the master in Königsberg and whose first book, Attempt at a Critique of All Revelation (1792), was published anonymously and initially mistaken for a work by Kant himself. This catapulted Fichte to fame, but soon he too moved away from Kant and developed an original position quite at odds with Kant’s, which Kant finally repudiated publicly in 1799 (12:370–371). Yet while German philosophy moved on to assess and respond to Kant’s legacy, Kant himself continued publishing important works in the 1790s. Among these are Religion Within the Boundaries of Mere Reason (1793), which drew a censure from the Prussian King when Kant published the book after its second essay was rejected by the censor; The Conflict of the Faculties (1798), a collection of essays inspired by Kant’s troubles with the censor and dealing with the relationship between the philosophical and theological faculties of the university; On the Common Saying: That May be Correct in Theory, But it is of No Use in Practice (1793), Toward Perpetual Peace (1795), and the Doctrine of Right, the first part of The Metaphysics of Morals (1797), Kant’s main works in political philosophy; the Doctrine of Virtue, the second part of The Metaphysics of Morals (1797), Kant’s most mature work in moral philosophy, which he had been planning for more than thirty years; and Anthropology From a Pragmatic Point of View (1798), based on Kant’s anthropology lectures. Several other compilations of Kant’s lecture notes from other courses were published later, but these were not prepared by Kant himself.
 
 Kant retired from teaching in 1796. For nearly two decades he had lived a highly disciplined life focused primarily on completing his philosophical system, which began to take definite shape in his mind only in middle age. After retiring he came to believe that there was a gap in this system separating the metaphysical foundations of natural science from physics itself, and he set out to close this gap in a series of notes that postulate the existence of an ether or caloric matter. These notes, known as the Opus Postumum, remained unfinished and unpublished in Kant’s lifetime, and scholars disagree on their significance and relation to his earlier work. It is clear, however, that some of these late notes show unmistakable signs of Kant’s mental decline, which became tragically precipitous around 1800. Kant died February 12, 1804, just short of his eightieth birthday."#));
+    let blocks = bytewise::make_blocks(&plain_t, 16);
+    let num_total = blocks.len();
+    let mut num_uniques = 0;
+    for i in 0..blocks.len() {
+        let mut unique = true;
+        for j in 0..blocks.len() {
+            if i == j {
+                continue
+            } else if blocks[i] == blocks[j] {
+                unique = false;
+            }
+        }
+        if unique {
+            num_uniques += 1;
+        }
+    }
+    println!("There were {} uniques out of {} total.", num_uniques, num_total);
     let guesses = 100;
     let mut guesses_right = 0.0;
     for _ in 0..guesses {
@@ -292,4 +312,58 @@ Kant retired from teaching in 1796. For nearly two decades he had lived a highly
 }
 
 pub fn set_twelve() {
+    // setup
+    let mut secret_suffix = b64::from_b64(String::from("Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkgaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBqdXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK"));
+    let key = bytewise::make_rand_vec(16);
+
+    // determine block size (even though we decided it on the last line)
+    let block_size = attack_aes::determine_block_size(&secret_suffix, &key);
+    assert_eq!(block_size, 16);
+
+    // confirm we are using ecb
+    let is_ecb = attack_aes::confirm_ecb(&secret_suffix, &key, block_size);
+    assert!(is_ecb);
+
+    // find the first letter
+    let mut known_prefix = Vec::new();
+    for i in 0..1 {//(aes::encrypt_ecb_appended(&Vec::new(), &secret_suffix, &key).len() / block_size) {
+        for _ in 0..block_size {
+            let new_letter = attack_aes::find_next_byte(&known_prefix, &secret_suffix, &key, i, block_size);
+            known_prefix.push(new_letter);
+        }
+        if i > 0 {
+            break
+        }
+    }
+
+    println!("first block: {}", bytewise::to_ascii(&known_prefix));
+
+    let mut pad_block = bytewise::make_null_vec(block_size);
+    let mut plain_t: Vec<u8> = Vec::new();
+    for (n, block) in bytewise::make_blocks(&aes::encrypt_ecb(&secret_suffix, &key), block_size).iter().enumerate() {
+        if n > 0 {
+            continue
+        }
+        for (j, _) in block.iter().enumerate() {
+            pad_block.reverse();
+            pad_block.pop();
+            pad_block.reverse();
+            let encrypted = aes::encrypt_ecb_appended(&pad_block, &secret_suffix, &key);
+            let block_of_interest = &encrypted[n*block_size..(n+1)*block_size];
+            for i in 0u8..=255u8 {
+                pad_block.push(i);
+                let characteristic_encrypted = aes::encrypt_ecb_appended(&pad_block, &secret_suffix, &key);
+                let characteristic_block = &characteristic_encrypted[n*block_size..(n+1)*block_size];
+                if *block_of_interest == *characteristic_block {
+                    plain_t.push(i);
+                    // shorten the pad block for next round
+                    pad_block.pop();
+                    pad_block.pop();
+                    pad_block.push(i);
+                    break
+                }
+            }
+        }
+    }
+    println!("first block: {}", bytewise::to_ascii(&plain_t));
 }
