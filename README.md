@@ -7,7 +7,7 @@ I wanted to learn how to write in Rust, and I wanted to learn how to crack slopp
 nix-shell
 
 # build as a Nix derivation
-nix-build ./package.nix
+nix-build ./release.nix
 
 # download various ciphertexts from the cryptopals website
 make get-data
