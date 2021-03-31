@@ -1,4 +1,5 @@
 get-data:
+	mkdir -p data
 	cd data \
 		&& wget -O 1-4.txt https://cryptopals.com/static/challenge-data/4.txt \
 		&& wget -O 1-6.txt https://cryptopals.com/static/challenge-data/6.txt \
