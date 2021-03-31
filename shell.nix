@@ -5,5 +5,6 @@ mkShell {
     gnumake
     rustc
     cargo
+    wget
   ];
 }
