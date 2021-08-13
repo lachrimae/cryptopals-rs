@@ -31,8 +31,6 @@ pub fn confirm_ecb(suffix:&Vec<u8>, key:&Vec<u8>, block_size:usize) -> bool {
 }
 
 pub fn find_next_byte(known_prefix:&Vec<u8>, suffix:&Vec<u8>, key:&Vec<u8>, block_num:usize, block_size:usize) -> u8 {
-    println!("block size? {}", block_size);
-    println!("known prefix? {:?}", known_prefix);
     let mut padded_prefix = bytewise::make_null_vec(block_size - known_prefix.len() - 1);
     for u in known_prefix.iter() {
         padded_prefix.push(*u);

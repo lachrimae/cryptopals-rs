@@ -35,7 +35,7 @@ fn main() {
         Some("9") => set_nine(),
         Some("10") => set_ten(),
         Some("11") => set_eleven(),
-        Some("12") => set_twelve(),
+        Some("12") => set_twelve_rewrite(),
         _ => {
             set_one();
             set_two();
@@ -312,7 +312,6 @@ Kant retired from teaching in 1796. For nearly two decades he had lived a highly
 }
 
 pub fn set_twelve() {
-    // setup
     let mut secret_suffix = b64::from_b64(String::from("Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkgaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBqdXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK"));
     let key = bytewise::make_rand_vec(16);
 
@@ -324,46 +323,30 @@ pub fn set_twelve() {
     let is_ecb = attack_aes::confirm_ecb(&secret_suffix, &key, block_size);
     assert!(is_ecb);
 
-    // find the first letter
     let mut known_prefix = Vec::new();
-    for i in 0..1 {//(aes::encrypt_ecb_appended(&Vec::new(), &secret_suffix, &key).len() / block_size) {
+    let mut last_time = false;
+    loop {
+        if last_time {
+            break;
+        }
         for _ in 0..block_size {
-            let new_letter = attack_aes::find_next_byte(&known_prefix, &secret_suffix, &key, i, block_size);
+            let new_letter = attack_aes::find_next_byte(&known_prefix, &secret_suffix, &key, 0, block_size);
             known_prefix.push(new_letter);
         }
-        if i > 0 {
-            break
-        }
-    }
-
-    println!("first block: {}", bytewise::to_ascii(&known_prefix));
-
-    let mut pad_block = bytewise::make_null_vec(block_size);
-    let mut plain_t: Vec<u8> = Vec::new();
-    for (n, block) in bytewise::make_blocks(&aes::encrypt_ecb(&secret_suffix, &key), block_size).iter().enumerate() {
-        if n > 0 {
-            continue
-        }
-        for (j, _) in block.iter().enumerate() {
-            pad_block.reverse();
-            pad_block.pop();
-            pad_block.reverse();
-            let encrypted = aes::encrypt_ecb_appended(&pad_block, &secret_suffix, &key);
-            let block_of_interest = &encrypted[n*block_size..(n+1)*block_size];
-            for i in 0u8..=255u8 {
-                pad_block.push(i);
-                let characteristic_encrypted = aes::encrypt_ecb_appended(&pad_block, &secret_suffix, &key);
-                let characteristic_block = &characteristic_encrypted[n*block_size..(n+1)*block_size];
-                if *block_of_interest == *characteristic_block {
-                    plain_t.push(i);
-                    // shorten the pad block for next round
-                    pad_block.pop();
-                    pad_block.pop();
-                    pad_block.push(i);
-                    break
-                }
+        print!("{}", bytewise::to_ascii(&known_prefix));
+        secret_suffix.reverse();
+        for _ in 0..block_size {
+            if secret_suffix.len() > block_size {
+                secret_suffix.pop();
+            } else if secret_suffix.len() == block_size {
+                last_time = true;
+                break
             }
         }
+        secret_suffix.reverse();
+        if (secret_suffix.len() == 0) {
+            break
+        }
+        known_prefix = Vec::new();
     }
-    println!("first block: {}", bytewise::to_ascii(&plain_t));
 }
