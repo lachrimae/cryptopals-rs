@@ -6,3 +6,4 @@ pub mod vigenere;
 pub mod padding;
 pub mod aes;
 pub mod attack_aes;
+pub mod param_parse;

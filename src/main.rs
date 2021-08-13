@@ -35,7 +35,7 @@ fn main() {
         Some("9") => set_nine(),
         Some("10") => set_ten(),
         Some("11") => set_eleven(),
-        Some("12") => set_twelve_rewrite(),
+        Some("12") => set_twelve(),
         _ => {
             set_one();
             set_two();
@@ -344,7 +344,7 @@ pub fn set_twelve() {
             }
         }
         secret_suffix.reverse();
-        if (secret_suffix.len() == 0) {
+        if secret_suffix.len() == 0 {
             break
         }
         known_prefix = Vec::new();
