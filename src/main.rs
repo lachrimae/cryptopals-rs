@@ -516,6 +516,7 @@ pub fn set_fourteen() {
     }
     println!("length of padding: {}", padding.len());
 
+    padding.pop();
     let current_ciphertext = &(attack_encrypter(&padding, &key)[16..32]);
     for _ in 0..padding.len() {
       for i in 0u8..=255u8 {
