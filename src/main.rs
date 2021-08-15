@@ -1,3 +1,5 @@
+#![feature(type_ascription)]
+
 mod cryptopals;
 
 #[macro_use]
@@ -14,6 +16,7 @@ pub use cryptopals::vigenere;
 pub use cryptopals::aes;
 pub use cryptopals::attack_aes;
 pub use cryptopals::padding;
+pub use cryptopals::param_parse;
 
 fn main() {
     let matches = clap_app!(myapp =>
@@ -36,6 +39,7 @@ fn main() {
         Some("10") => set_ten(),
         Some("11") => set_eleven(),
         Some("12") => set_twelve(),
+        Some("13") => set_thirteen(),
         _ => {
             set_one();
             set_two();
@@ -49,6 +53,7 @@ fn main() {
             set_ten();
             set_eleven();
             set_twelve();
+            set_thirteen();
         }
     }
 }
@@ -229,7 +234,7 @@ fn set_nine() {
     assert_eq!(via_library, manual);
 
     manual.pop(); manual.pop(); manual.pop(); manual.pop();
-    padding::depkcs7(&mut via_library);
+    padding::depkcs7(&mut via_library).unwrap();
     assert_eq!(via_library, manual);
 }
 
@@ -348,5 +353,83 @@ pub fn set_twelve() {
             break
         }
         known_prefix = Vec::new();
+    }
+}
+
+pub fn set_thirteen() {
+    // check that the parameter parsing works
+    let pairs = String::from("foo=bar&baz=qux&zap=zazzle");
+    let parsed = match param_parse::parse_params(&pairs) {
+        Ok(parsed) => parsed,
+        Err(e) => panic!("{}", e),
+    };
+    let pairs_as_hashmap: HashMap<String, String> = [(String::from("foo"), String::from("bar")), (String::from("baz"), String::from("qux")), (String::from("zap"), String::from("zazzle"))]
+        .iter().cloned().collect();
+    assert_eq!(parsed, pairs_as_hashmap);
+
+    // check that the profile-construction works
+    let foo_profile = param_parse::profile_for("foo@bar.com");
+    let parsed_profile = match param_parse::parse_params(&foo_profile) {
+        Ok(parsed) => parsed,
+        Err(e) => panic!("{}", e),
+    };
+    let profile_as_hashmap: HashMap<String, String> = [(String::from("email"), String::from("foo@bar.com")), (String::from("uid"), String::from("10")), (String::from("role"), String::from("user"))]
+        .iter().cloned().collect();
+    assert_eq!(parsed_profile, profile_as_hashmap);
+
+    // check that encrypting a profile and decrypting it works
+    let key = bytewise::make_rand_vec(16);
+    let plain_t = bytewise::from_ascii(&foo_profile);
+    let cipher_t = aes::encrypt_ecb(&plain_t, &key);
+    let out_t = aes::decrypt_ecb(&cipher_t, &key);
+    let parsed_profile = match param_parse::parse_params(&bytewise::to_ascii(&out_t)) {
+        Ok(parsed) => parsed,
+        Err(e) => panic!("{}", e),
+    };
+    assert_eq!(parsed_profile, profile_as_hashmap);
+
+    // We are trying to construct an encrypted user profile with role=admin, assuming we can only
+    // access ciphertexts for user profiles with role=user, and we can encrypt plaintexts.
+
+    // With this sequence of queries we will find how to append "admin" to the ciphertext
+    let dastardly_email: &str = "6789012345admin___________@bar.com";
+    let dastardly_parsed = param_parse::profile_for(dastardly_email);
+    let dastardly_plain: Vec<u8> = bytewise::from_ascii(&dastardly_parsed)
+        .iter().map(|&x| match x {
+            95 => 11,
+            n => n,
+        }).collect();
+    let dastardly_cipher = aes::encrypt_ecb(&dastardly_plain, &key);
+    // we will use this block, which contains the encrypted version of "adminXXXXXXXXXXX",
+    // where X is the PKCS5 padding value, to construct a malicious ciphertext.
+    let sesame = &dastardly_cipher[16..32];
+
+    // With this set of queries we will learn what the prefix of the ciphertext should be
+    let infiltration_email: &str = "foooo@bar.com";
+    let infiltration_parsed = param_parse::profile_for(infiltration_email);
+    let infiltration_cipher = aes::encrypt_ecb(&bytewise::from_ascii(&infiltration_parsed), &key);
+    // the following slice should contain the encrypted version of "email=foooo@bar.com&uid=10&role="
+    let open = &infiltration_cipher[0..32];
+
+    // OPEN SESAME!
+    let cipher_admin = [open, sesame].concat();
+    let plain_admin = bytewise::to_ascii(&aes::decrypt_ecb(&cipher_admin, &key));
+    let user_role = &param_parse::parse_params(&plain_admin).unwrap()["role"];
+    assert_eq!(user_role, "admin");
+}
+
+
+pub fn set_fourteen() {
+    let key = bytewise::make_rand_vec(16);
+
+    fn encrypt(plain_t: &Vec<u8>, key: &Vec<u8>) -> Vec<u8> {
+        let prefix_len: u8 = 5u8 + ((rand::random(): u8) % 6u8);
+        let prefix = bytewise::make_rand_vec(prefix_len as usize);
+        aes::encrypt_ecb_appended(&prefix, plain_t, key)
+    }
+    fn attack_encrypter(mut attacker_controlled: Vec<u8>, key: &Vec<u8>) -> Vec<u8> {
+        let secret_suffix = b64::from_b64(String::from("Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkgaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBqdXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK"));
+        attacker_controlled.extend(secret_suffix.iter().cloned());
+        encrypt(&attacker_controlled, key)
     }
 }

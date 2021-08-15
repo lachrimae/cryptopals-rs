@@ -3,8 +3,7 @@ mkShell {
   name = "embedded-shell";
   buildInputs = [
     gnumake
-    rustc
-    cargo
+    rustup
     wget
   ];
 }

@@ -6,7 +6,7 @@ use super::aes;
 pub fn determine_block_size(suffix:&Vec<u8>, key:&Vec<u8>) -> usize {
     let raw_length = aes::encrypt_ecb(&suffix, &key).len();
     let mut counter = 1;
-    let mut block_size = 0;
+    let block_size;
     let mut prefix = Vec::with_capacity(counter as usize);
     loop {
         prefix.push(0u8);
@@ -35,7 +35,7 @@ pub fn find_next_byte(known_prefix:&Vec<u8>, suffix:&Vec<u8>, key:&Vec<u8>, bloc
     for u in known_prefix.iter() {
         padded_prefix.push(*u);
     }
-    let mut pad = bytewise::make_null_vec(block_size - known_prefix.len() - 1);
+    let pad = bytewise::make_null_vec(block_size - known_prefix.len() - 1);
     let mut next_letter = 0;
     let mut found_byte = false;
     let encrypted_block = &aes::encrypt_ecb_appended(&pad, &suffix, &key)[block_num*block_size..(block_num+1)*block_size];

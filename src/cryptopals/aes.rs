@@ -38,7 +38,10 @@ pub fn encrypt_ecb(plain_t:&Vec<u8>, key:&Vec<u8>) -> Vec<u8> {
 
 pub fn decrypt_ecb(cipher_t:&Vec<u8>, key:&Vec<u8>) -> Vec<u8> {
     let mut plain_t = decrypt_ecb_raw(&cipher_t, &key);
-    padding::depkcs7(&mut plain_t);
+    match padding::depkcs7(&mut plain_t) {
+        Ok(()) => (),
+        Err(s) => panic!("{}", s),
+    }
     plain_t
 }
 
@@ -73,7 +76,10 @@ pub fn decrypt_cbc(cipher_t:&Vec<u8>, key:&Vec<u8>, iv:&Vec<u8>) -> Vec<u8> {
         plain_blocks[i] = bytewise::xor(&block_to_xor, &cipher_blocks[i]);
     }
     let mut plain_t = bytewise::concat_blocks(&plain_blocks);
-    padding::depkcs7(&mut plain_t);
+    match padding::depkcs7(&mut plain_t) {
+        Ok(()) => (),
+        Err(s) => panic!("{}", s),
+    }
     plain_t
 }
 
@@ -95,10 +101,6 @@ pub fn encryption_oracle(plain_t:&Vec<u8>) -> (Vec<u8>, &str) {
     } else {
         (encrypt_ecb(&padded_t, &key), "ecb")
     }
-}
-
-pub fn encryption_oracle_no_rand(plain_t:&Vec<u8>, key:&Vec<u8>) -> () { //(Vec<u8>, String) {
-    //let encrypt_ecb(&plain_t, &key)
 }
 
 pub fn encrypt_ecb_appended(plain_t1:&Vec<u8>, plain_t2:&Vec<u8>, key:&Vec<u8>) -> Vec<u8> {

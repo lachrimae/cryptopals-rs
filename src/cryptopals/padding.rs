@@ -27,22 +27,22 @@ pub fn pkcs7(block:&mut Vec<u8>, length: usize) {
     }
 }
 
-// TODO: make this detect *bad* padding and throw an error instead of panicking.
-pub fn depkcs7(block:&mut Vec<u8>) {
-    let last_char = block.last().unwrap();
-    let pad_length = *last_char as usize;
+pub fn depkcs7(block:&mut Vec<u8>) -> Result<(), String> {
+    let &last_char = block.last().unwrap();
+    let pad_length = last_char as usize;
     if pad_length > block.len() {
-        return
+        return Ok(());
     }
     let pad_candidate = &block[block.len() - pad_length..block.len()];
-    for pad_char in pad_candidate.iter() {
+    for &pad_char in pad_candidate.iter() {
         if pad_char != last_char {
-            panic!("Bad padding!");
+            return Err(format!("Bad padding! expected {} '{}' chars", last_char, last_char as char));
         }
     }
     for _ in 0..pad_length {
         block.pop();
     }
+    Ok(())
 }
 
 #[cfg(test)]
