@@ -67,4 +67,15 @@ mod tests {
             b"YELLOW SUBMARINE1234\x0C\x0C\x0C\x0C\x0C\x0C\x0C\x0C\x0C\x0C\x0C\x0C".to_vec()
         );
     }
+
+    #[test]
+    fn depad_failures() {
+        let mut too_short = String::from("ICE ICE BABY\x05\x05\x05\x05");
+        let res = super::depkcs7(&mut crate::cryptopals::bytewise::from_ascii(&too_short));
+        assert!(res != Ok(()));
+
+        let mut wrong_stuff = String::from("ICE ICE BABY\x01\x02\x03\x04");
+        let res = super::depkcs7(&mut crate::cryptopals::bytewise::from_ascii(&wrong_stuff));
+        assert!(res != Ok(()));
+    }
 }

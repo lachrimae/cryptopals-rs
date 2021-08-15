@@ -516,7 +516,27 @@ pub fn set_fourteen() {
     }
     println!("length of padding: {}", padding.len());
 
-    padding.pop();
+    // The theory behind the following bit of code is that we have
+    // the following configuration:
+    // random prefix  padding        secret suffix
+    //    xxxxx / ooooooooooooooo / sssssssssssssssss
+    // It should be the case at this point of the code that
+    //     len(x) + len(o) % 16 == 15
+    // since we have shortened the padding to the point at which the second
+    // block has started to change. I.e., the last byte of the second block
+    // is the first byte of the secret suffix.
+    //
+    // Therefore, if we instead *push* bytes to the padding one-by-one,
+    // we know we have found the first byte of the secret suffix once we
+    // have found the byte that does not alter the encrypted output when
+    // we push it to the padding.
+    //
+    // At that point, we can shorten the length of the null pad and start testing
+    // for the second byte as before.
+    //
+    // The only complication to this is that we have to rerun things a bunch of
+    // times so we make sure we don't miss any max-length prefixes.
+    padding.pop(); padding.pop(); padding.pop();
     let current_ciphertext = &(attack_encrypter(&padding, &key)[16..32]);
     for _ in 0..padding.len() {
       for i in 0u8..=255u8 {
