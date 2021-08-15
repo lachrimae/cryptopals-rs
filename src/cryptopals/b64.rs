@@ -1,4 +1,5 @@
 use std::vec::Vec;
+use std::fs;
 
 static B64_ALPHABET: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
@@ -165,6 +166,16 @@ pub fn from_b64(s: String) -> Vec<u8> {
         }
     }
     bs
+}
+
+pub fn get_linewrapped_b64(filename: &str) -> Vec<u8> {
+    from_b64(
+        fs::read_to_string(filename)
+            .expect("file not found")
+            .chars()
+            .filter(|c| *c != '\n')
+            .collect(),
+    )
 }
 
 #[cfg(test)]

@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-pub const ENG_ALPHABET: &str = "abcdefghijklmnopqrstuvwxyz";
 const ENG_FREQS: [(char, f64); 26] = [
     ('a', 0.082),
     ('b', 0.015),
@@ -51,60 +50,4 @@ pub fn eng_score(eng_passage: String, _euclidean: bool) -> f64 {
         dist += delta.abs();
     }
     dist
-}
-
-pub fn eng_score_old(eng_passage: String, euclidean: bool) -> f64 {
-    assert_ne!(eng_passage.len(), 0);
-    let punct_cost = 1.0
-        * (eng_passage
-            .chars()
-            .filter(|c| !c.is_ascii())
-            .collect::<String>()
-            .len() as f64);
-    let no_spaces_present = eng_passage
-        .chars()
-        .filter(|c| *c == ' ')
-        .collect::<String>()
-        .len()
-        == 0;
-    let no_spaces_cost = if no_spaces_present { 5.0 } else { 0.0 };
-    let uppercase_rate = eng_passage
-        .chars()
-        .filter(char::is_ascii_uppercase)
-        .collect::<String>()
-        .len() as f64
-        / eng_passage.len() as f64;
-    let uppercase_cost = if uppercase_rate > 0.2 { 3.0 } else { 0.0 };
-    let eng_passage: String = eng_passage
-        .to_lowercase()
-        .chars()
-        .filter(char::is_ascii_lowercase)
-        .collect();
-    if eng_passage.len() == 0 {
-        return 20.0;
-    }
-    let mut eng_freqs: HashMap<char, f64> = HashMap::with_capacity(26);
-    for (c, freq) in ENG_FREQS.iter() {
-        eng_freqs.insert(*c, *freq);
-    }
-    let mut passage_freqs: HashMap<char, f64> = HashMap::with_capacity(26);
-    let mut total = 0.0;
-    for c in eng_passage.chars() {
-        total += 1.0;
-        let count = *passage_freqs.entry(c).or_insert(0.0);
-        passage_freqs.insert(c, count + 1.0);
-    }
-    let mut dist: f64 = 0.0;
-    for (c, _) in ENG_FREQS.iter() {
-        let current_entry = *passage_freqs.entry(*c).or_insert(0.0);
-        passage_freqs.insert(*c, current_entry / total);
-        let incr = *passage_freqs.entry(*c).or_insert(0.0) - *eng_freqs.entry(*c).or_insert(0.0);
-        let incr = if euclidean {
-            incr.powf(2.0)
-        } else {
-            incr.abs()
-        };
-        dist += incr;
-    }
-    uppercase_cost + punct_cost + no_spaces_cost + if euclidean { dist.sqrt() } else { dist }
 }
