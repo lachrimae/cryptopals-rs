@@ -2,7 +2,7 @@ extern crate rand;
 
 use std::vec::Vec;
 
-pub fn xor(bs1:&Vec<u8>, bs2:&Vec<u8>) -> Vec<u8> {
+pub fn xor(bs1: &Vec<u8>, bs2: &Vec<u8>) -> Vec<u8> {
     let mut out = Vec::with_capacity(std::cmp::min(bs1.len(), bs2.len()));
     let i = bs1.iter().zip(bs2.iter());
     for (a, b) in i {
@@ -11,7 +11,7 @@ pub fn xor(bs1:&Vec<u8>, bs2:&Vec<u8>) -> Vec<u8> {
     out
 }
 
-pub fn make_null_vec(len:usize) -> Vec<u8> {
+pub fn make_null_vec(len: usize) -> Vec<u8> {
     let mut iv = Vec::with_capacity(len);
     for _ in 0..len {
         iv.push(0);
@@ -19,7 +19,7 @@ pub fn make_null_vec(len:usize) -> Vec<u8> {
     iv
 }
 
-pub fn make_rand_vec(len:usize) -> Vec<u8> {
+pub fn make_rand_vec(len: usize) -> Vec<u8> {
     let mut iv = Vec::with_capacity(len);
     for _ in 0..len {
         iv.push(rand::random());
@@ -27,7 +27,7 @@ pub fn make_rand_vec(len:usize) -> Vec<u8> {
     iv
 }
 
-pub fn xor_rep(bs1:&Vec<u8>, rep:&Vec<u8>) -> Vec<u8> {
+pub fn xor_rep(bs1: &Vec<u8>, rep: &Vec<u8>) -> Vec<u8> {
     let mut out = Vec::with_capacity(bs1.len());
     let i = bs1.iter().zip(rep.iter().cycle());
     for (b, r) in i {
@@ -36,7 +36,7 @@ pub fn xor_rep(bs1:&Vec<u8>, rep:&Vec<u8>) -> Vec<u8> {
     out
 }
 
-pub fn hamm_dist(bs1:&Vec<u8>, bs2:&Vec<u8>) -> u32 {
+pub fn hamm_dist(bs1: &Vec<u8>, bs2: &Vec<u8>) -> u32 {
     let mut dist = (bs1.len() as i32 - bs2.len() as i32).abs() as u32;
     let i = bs1.iter().zip(bs2.iter());
     for (a, b) in i {
@@ -50,7 +50,7 @@ pub fn hamm_dist(bs1:&Vec<u8>, bs2:&Vec<u8>) -> u32 {
     dist
 }
 
-pub fn transpose(bss:&Vec<Vec<u8>>) -> Vec<Vec<u8>> {
+pub fn transpose(bss: &Vec<Vec<u8>>) -> Vec<Vec<u8>> {
     let max_len = match bss.iter().map(Vec::len).max() {
         Some(l) => l,
         None => 0,
@@ -68,15 +68,15 @@ pub fn transpose(bss:&Vec<Vec<u8>>) -> Vec<Vec<u8>> {
     out
 }
 
-pub fn to_ascii(bytes:&Vec<u8>) -> String {
+pub fn to_ascii(bytes: &Vec<u8>) -> String {
     bytes.iter().map(|u| *u as char).collect()
 }
 
-pub fn from_ascii(string:&String) -> Vec<u8> {
+pub fn from_ascii(string: &String) -> Vec<u8> {
     string.chars().map(|c| c as u8).collect()
 }
 
-pub fn make_blocks(bs:&Vec<u8>, size:usize) -> Vec<Vec<u8>> {
+pub fn make_blocks(bs: &Vec<u8>, size: usize) -> Vec<Vec<u8>> {
     let mut blocks = Vec::with_capacity(1 + (bs.len() / size));
     let mut bytes_processed = 0;
     let mut block: Vec<u8> = Vec::with_capacity(size);
@@ -95,7 +95,7 @@ pub fn make_blocks(bs:&Vec<u8>, size:usize) -> Vec<Vec<u8>> {
     blocks
 }
 
-pub fn concat_blocks(bss:&Vec<Vec<u8>>) -> Vec<u8> {
+pub fn concat_blocks(bss: &Vec<Vec<u8>>) -> Vec<u8> {
     let mut out = Vec::with_capacity(2 * bss[0].len() * bss.len());
     for bs in bss.iter() {
         for b in bs.iter() {
@@ -105,16 +105,16 @@ pub fn concat_blocks(bss:&Vec<Vec<u8>>) -> Vec<u8> {
     out
 }
 
-pub fn has_duplicates(bss:&Vec<Vec<u8>>) -> bool {
+pub fn has_duplicates(bss: &Vec<Vec<u8>>) -> bool {
     let l = bss.len();
     for i in 0..l {
-        for j in (i+1)..l {
+        for j in (i + 1)..l {
             if bss[i] == bss[j] {
-                return true
+                return true;
             }
         }
     }
-    return false
+    return false;
 }
 
 #[cfg(test)]
@@ -127,7 +127,12 @@ mod tests {
     fn tranpose_is_own_inverse() {
         let v = make_test_vector();
         for n in 1..=255 {
-            assert_eq!(v, super::concat_blocks(&super::transpose(&super::transpose(&(super::make_blocks(&v, n))))));
+            assert_eq!(
+                v,
+                super::concat_blocks(&super::transpose(&super::transpose(
+                    &(super::make_blocks(&v, n))
+                )))
+            );
         }
     }
 

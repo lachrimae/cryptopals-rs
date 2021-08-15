@@ -2,7 +2,7 @@ use std::vec::Vec;
 
 static B64_ALPHABET: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-fn from_b64_char(character:&char) -> u8 {
+fn from_b64_char(character: &char) -> u8 {
     match character {
         'A' => 0,
         'B' => 1,
@@ -72,35 +72,38 @@ fn from_b64_char(character:&char) -> u8 {
     }
 }
 
-fn to_b64_char(byte:&u8) -> char {
+fn to_b64_char(byte: &u8) -> char {
     String::from(B64_ALPHABET).as_bytes()[(byte % 64) as usize] as char
 }
 
-pub fn to_b64(bs:&Vec<u8>) -> String {
+pub fn to_b64(bs: &Vec<u8>) -> String {
     let mut s = String::new();
     let mut i = bs.iter();
     loop {
         let a = i.next();
         let b = i.next();
         let c = i.next();
-        if a == None { 
-            break
+        if a == None {
+            break;
         } else if b == None {
             let a = a.unwrap();
             let x = to_b64_char(&(a >> 2));
             let y = to_b64_char(&((a % 4) << 4));
-            s.push(x); s.push(y);
+            s.push(x);
+            s.push(y);
             s.push_str("==");
-            break
+            break;
         } else if c == None {
             let a = a.unwrap();
             let b = b.unwrap();
             let x = to_b64_char(&(a >> 2));
             let y = to_b64_char(&(((a % 4) << 4) + (b >> 4)));
             let z = to_b64_char(&((b % 32) << 2));
-            s.push(x); s.push(y); s.push(z);
+            s.push(x);
+            s.push(y);
+            s.push(z);
             s.push('=');
-            break
+            break;
         } else {
             let a = a.unwrap();
             let b = b.unwrap();
@@ -109,19 +112,22 @@ pub fn to_b64(bs:&Vec<u8>) -> String {
             let y = to_b64_char(&(((a % 4) << 4) + (b >> 4)));
             let z = to_b64_char(&(((b % 32) << 2) + (c >> 6)));
             let w = to_b64_char(&(c % 128));
-            s.push(x); s.push(y); s.push(z); s.push(w);
+            s.push(x);
+            s.push(y);
+            s.push(z);
+            s.push(w);
         }
     }
     s
 }
 
-pub fn from_b64(s:String) -> Vec<u8> {
+pub fn from_b64(s: String) -> Vec<u8> {
     let mut bs = Vec::new();
     let mut i = s.chars();
     loop {
         let a = i.next();
         if a == None {
-            break
+            break;
         }
         let a = a.unwrap() as char;
         let b = i.next().unwrap() as char;
@@ -135,15 +141,16 @@ pub fn from_b64(s:String) -> Vec<u8> {
             let b = from_b64_char(&b);
             let x = (a << 2) + (b >> 4);
             bs.push(x);
-            break
+            break;
         } else if d == '=' {
             let a = from_b64_char(&a);
             let b = from_b64_char(&b);
             let c = from_b64_char(&c);
             let x = (a << 2) + (b >> 4);
             let y = (b << 4) + (c >> 2);
-            bs.push(x); bs.push(y);
-            break
+            bs.push(x);
+            bs.push(y);
+            break;
         } else {
             let a = from_b64_char(&a);
             let b = from_b64_char(&b);
@@ -152,7 +159,9 @@ pub fn from_b64(s:String) -> Vec<u8> {
             let x = (a << 2) + (b >> 4);
             let y = (b << 4) + (c >> 2);
             let z = (c << 6) + d;
-            bs.push(x); bs.push(y); bs.push(z);
+            bs.push(x);
+            bs.push(y);
+            bs.push(z);
         }
     }
     bs
@@ -175,8 +184,17 @@ mod tests {
         let t1 = String::from("TWFu");
         let t2 = String::from("TWE=");
         let t3 = String::from("TQ==");
-        assert_eq!(super::from_b64(t1), super::super::bytewise::from_ascii(&String::from("Man")));
-        assert_eq!(super::from_b64(t2), super::super::bytewise::from_ascii(&String::from("Ma")));
-        assert_eq!(super::from_b64(t3), super::super::bytewise::from_ascii(&String::from("M")));
+        assert_eq!(
+            super::from_b64(t1),
+            super::super::bytewise::from_ascii(&String::from("Man"))
+        );
+        assert_eq!(
+            super::from_b64(t2),
+            super::super::bytewise::from_ascii(&String::from("Ma"))
+        );
+        assert_eq!(
+            super::from_b64(t3),
+            super::super::bytewise::from_ascii(&String::from("M"))
+        );
     }
 }

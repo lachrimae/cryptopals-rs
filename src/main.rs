@@ -8,15 +8,15 @@ extern crate clap;
 use std::collections::HashMap;
 use std::fs;
 
-pub use cryptopals::hex;
+pub use cryptopals::aes;
+pub use cryptopals::attack_aes;
 pub use cryptopals::b64;
 pub use cryptopals::bytewise;
 pub use cryptopals::frequency;
-pub use cryptopals::vigenere;
-pub use cryptopals::aes;
-pub use cryptopals::attack_aes;
+pub use cryptopals::hex;
 pub use cryptopals::padding;
 pub use cryptopals::param_parse;
+pub use cryptopals::vigenere;
 
 fn main() {
     let matches = clap_app!(myapp =>
@@ -24,7 +24,8 @@ fn main() {
         (author: "Curran McConnell <curran.mcconnell@protonmail.com>")
         (about: "test the cryptopals lib I wrote")
         (@arg PROBLEMSET: -s --set +required +takes_value "the problemset to test")
-    ).get_matches();
+    )
+    .get_matches();
 
     match matches.value_of("PROBLEMSET") {
         Some("1") => set_one(),
@@ -65,10 +66,13 @@ fn set_one() {
 fn set_two() {
     let s1 = "1c0111001f010100061a024b53535009181c";
     let s2 = "686974207468652062756c6c277320657965";
-    assert_eq!(hex::to_hex(&bytewise::xor(&hex::from_hex(s1), &hex::from_hex(s2))), "746865206b696420646f6e277420706c6179")
+    assert_eq!(
+        hex::to_hex(&bytewise::xor(&hex::from_hex(s1), &hex::from_hex(s2))),
+        "746865206b696420646f6e277420706c6179"
+    )
 }
 
-fn set_three(ciphertext:Option<String>) {
+fn set_three(ciphertext: Option<String>) {
     let mut dists = HashMap::new();
     let mut default_run = false;
     if ciphertext == None {
@@ -76,7 +80,9 @@ fn set_three(ciphertext:Option<String>) {
     }
     let x = match ciphertext {
         Some(x) => hex::from_hex(&x),
-        None => hex::from_hex("1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736"),
+        None => {
+            hex::from_hex("1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736")
+        }
     };
     let l = x.len();
     for c in 0..=255 {
@@ -89,16 +95,23 @@ fn set_three(ciphertext:Option<String>) {
         dists.insert(c, dist);
     }
     let mut letters = (0..=255).collect::<Vec<u8>>();
-    letters.sort_by(
-        |a, b| dists.get(a).unwrap().partial_cmp(&dists.get(b).unwrap()).unwrap()
-    );
+    letters.sort_by(|a, b| {
+        dists
+            .get(a)
+            .unwrap()
+            .partial_cmp(&dists.get(b).unwrap())
+            .unwrap()
+    });
     let mut is_first = true;
     for c in letters.iter().take(5) {
         let mut cs = Vec::with_capacity(l);
         for _ in 0..x.len() {
             cs.push(*c as u8);
         }
-        let p_text = bytewise::xor(&x, &cs).iter().map(|c| *c as char).collect::<String>();
+        let p_text = bytewise::xor(&x, &cs)
+            .iter()
+            .map(|c| *c as char)
+            .collect::<String>();
         if is_first && default_run {
             assert_eq!("Cooking MC's like a pound of bacon", p_text);
             is_first = false;
@@ -154,38 +167,48 @@ fn set_five() {
         .chars()
         .map(|c| c as u8)
         .collect::<Vec<u8>>();
-    let key = "ICE"
-        .chars()
-        .map(|c| c as u8)
-        .collect::<Vec<u8>>();
+    let key = "ICE".chars().map(|c| c as u8).collect::<Vec<u8>>();
     let cipher = bytewise::xor_rep(&stanza, &key);
     println!("The cipher: {}", hex::to_hex(&cipher));
     assert_eq!(cipher, hex::from_hex("0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f"));
 }
 
 fn set_six() {
-    let t1 = "this is a test".chars().map(|c| c as u8).collect::<Vec<u8>>();
-    let t2 = "wokka wokka!!!".chars().map(|c| c as u8).collect::<Vec<u8>>();
+    let t1 = "this is a test"
+        .chars()
+        .map(|c| c as u8)
+        .collect::<Vec<u8>>();
+    let t2 = "wokka wokka!!!"
+        .chars()
+        .map(|c| c as u8)
+        .collect::<Vec<u8>>();
     assert_eq!(bytewise::hamm_dist(&t1, &t2), 37);
     assert_eq!(b64::from_b64(b64::to_b64(&t1)), t1);
-    assert_eq!(b64::to_b64(&b64::from_b64(b64::to_b64(&t1))), b64::to_b64(&t1));
+    assert_eq!(
+        b64::to_b64(&b64::from_b64(b64::to_b64(&t1))),
+        b64::to_b64(&t1)
+    );
 
     let ciphertext = get_linewrapped_b64("./data/1-6.txt");
     let blocks = vigenere::break_vigenere(&ciphertext);
-    assert_eq!(bytewise::to_ascii(&blocks)[..10], "I'm back and I'm ringin' the bell"[..10]);
+    assert_eq!(
+        bytewise::to_ascii(&blocks)[..10],
+        "I'm back and I'm ringin' the bell"[..10]
+    );
     println!("{}", bytewise::to_ascii(&blocks));
 }
 
-fn get_linewrapped_b64(filename:&str) -> Vec<u8> {
+fn get_linewrapped_b64(filename: &str) -> Vec<u8> {
     b64::from_b64(
         fs::read_to_string(filename)
-        .expect("file not found")
-        .chars()
-        .filter(|c| *c != '\n')
-        .collect())
+            .expect("file not found")
+            .chars()
+            .filter(|c| *c != '\n')
+            .collect(),
+    )
 }
 
-fn get_many_hex(filename:&str) -> Vec<Vec<u8>> {
+fn get_many_hex(filename: &str) -> Vec<Vec<u8>> {
     fs::read_to_string(filename)
         .expect("file not found")
         .split("\n")
@@ -197,7 +220,10 @@ fn set_seven() {
     let key = bytewise::from_ascii(&String::from("YELLOW SUBMARINE"));
     let cipher_t = get_linewrapped_b64("./data/1-7.txt");
     let plain_t = aes::decrypt_ecb(&cipher_t, &key);
-    assert_eq!(bytewise::to_ascii(&plain_t)[..33], String::from("I'm back and I'm ringin' the bell"));
+    assert_eq!(
+        bytewise::to_ascii(&plain_t)[..33],
+        String::from("I'm back and I'm ringin' the bell")
+    );
 }
 
 fn set_eight() {
@@ -228,12 +254,18 @@ fn set_eight() {
 
 fn set_nine() {
     let mut manual = bytewise::from_ascii(&String::from("YELLOW SUBMARINE"));
-    manual.push(4); manual.push(4); manual.push(4); manual.push(4);
+    manual.push(4);
+    manual.push(4);
+    manual.push(4);
+    manual.push(4);
     let mut via_library = bytewise::from_ascii(&String::from("YELLOW SUBMARINE"));
     padding::pkcs7(&mut via_library, 20);
     assert_eq!(via_library, manual);
 
-    manual.pop(); manual.pop(); manual.pop(); manual.pop();
+    manual.pop();
+    manual.pop();
+    manual.pop();
+    manual.pop();
     padding::depkcs7(&mut via_library).unwrap();
     assert_eq!(via_library, manual);
 }
@@ -252,11 +284,15 @@ fn set_ten() {
     assert_eq!(test_plain_t, test_out_t);
 
     let cipher_t = &get_linewrapped_b64("./data/2-10.txt");
-    assert_eq!(" ringin"[..7], bytewise::to_ascii(&aes::decrypt_cbc(&cipher_t, &key, &iv))[..7]);
+    assert_eq!(
+        " ringin"[..7],
+        bytewise::to_ascii(&aes::decrypt_cbc(&cipher_t, &key, &iv))[..7]
+    );
 }
 
 fn set_eleven() {
-    let plain_t = bytewise::from_ascii(&String::from(r#" Kant was born into an artisan family of modest means. His father was a master harness maker, and his mother was the daughter of a harness maker, though she was better educated than most women of her social class. Kant’s family was never destitute, but his father’s trade was in decline during Kant’s youth and his parents at times had to rely on extended family for financial support.
+    let plain_t = bytewise::from_ascii(&String::from(
+        r#" Kant was born into an artisan family of modest means. His father was a master harness maker, and his mother was the daughter of a harness maker, though she was better educated than most women of her social class. Kant’s family was never destitute, but his father’s trade was in decline during Kant’s youth and his parents at times had to rely on extended family for financial support.
 
 Kant’s parents were Pietist and he attended a Pietist school, the Collegium Fridericianum, from ages eight through fifteen. Pietism was an evangelical Lutheran movement that emphasized conversion, reliance on divine grace, the experience of religious emotions, and personal devotion involving regular Bible study, prayer, and introspection. Kant reacted strongly against the forced soul-searching to which he was subjected at the Collegium Fridericianum, in response to which he sought refuge in the Latin classics, which were central to the school’s curriculum. Later the mature Kant’s emphasis on reason and autonomy, rather than emotion and dependence on either authority or grace, may in part reflect his youthful reaction against Pietism. But although the young Kant loathed his Pietist schooling, he had deep respect and admiration for his parents, especially his mother, whose “genuine religiosity” he described as “not at all enthusiastic.” According to his biographer, Manfred Kuehn, Kant’s parents probably influenced him much less through their Pietism than through their artisan values of “hard work, honesty, cleanliness, and independence,” which they taught him by example.[2]
 
@@ -282,7 +318,8 @@ After 1770 Kant never surrendered the views that sensibility and understanding a
 
 With these works Kant secured international fame and came to dominate German philosophy in the late 1780s. But in 1790 he announced that the Critique of the Power of Judgment brought his critical enterprise to an end (5:170). By then K. L. Reinhold (1758–1823), whose Letters on the Kantian Philosophy (1786) popularized Kant’s moral and religious ideas, had been installed (in 1787) in a chair devoted to Kantian philosophy at Jena, which was more centrally located than Königsberg and rapidly developing into the focal point of the next phase in German intellectual history. Reinhold soon began to criticize and move away from Kant’s views. In 1794 his chair at Jena passed to J. G. Fichte, who had visited the master in Königsberg and whose first book, Attempt at a Critique of All Revelation (1792), was published anonymously and initially mistaken for a work by Kant himself. This catapulted Fichte to fame, but soon he too moved away from Kant and developed an original position quite at odds with Kant’s, which Kant finally repudiated publicly in 1799 (12:370–371). Yet while German philosophy moved on to assess and respond to Kant’s legacy, Kant himself continued publishing important works in the 1790s. Among these are Religion Within the Boundaries of Mere Reason (1793), which drew a censure from the Prussian King when Kant published the book after its second essay was rejected by the censor; The Conflict of the Faculties (1798), a collection of essays inspired by Kant’s troubles with the censor and dealing with the relationship between the philosophical and theological faculties of the university; On the Common Saying: That May be Correct in Theory, But it is of No Use in Practice (1793), Toward Perpetual Peace (1795), and the Doctrine of Right, the first part of The Metaphysics of Morals (1797), Kant’s main works in political philosophy; the Doctrine of Virtue, the second part of The Metaphysics of Morals (1797), Kant’s most mature work in moral philosophy, which he had been planning for more than thirty years; and Anthropology From a Pragmatic Point of View (1798), based on Kant’s anthropology lectures. Several other compilations of Kant’s lecture notes from other courses were published later, but these were not prepared by Kant himself.
 
-Kant retired from teaching in 1796. For nearly two decades he had lived a highly disciplined life focused primarily on completing his philosophical system, which began to take definite shape in his mind only in middle age. After retiring he came to believe that there was a gap in this system separating the metaphysical foundations of natural science from physics itself, and he set out to close this gap in a series of notes that postulate the existence of an ether or caloric matter. These notes, known as the Opus Postumum, remained unfinished and unpublished in Kant’s lifetime, and scholars disagree on their significance and relation to his earlier work. It is clear, however, that some of these late notes show unmistakable signs of Kant’s mental decline, which became tragically precipitous around 1800. Kant died February 12, 1804, just short of his eightieth birthday."#));
+Kant retired from teaching in 1796. For nearly two decades he had lived a highly disciplined life focused primarily on completing his philosophical system, which began to take definite shape in his mind only in middle age. After retiring he came to believe that there was a gap in this system separating the metaphysical foundations of natural science from physics itself, and he set out to close this gap in a series of notes that postulate the existence of an ether or caloric matter. These notes, known as the Opus Postumum, remained unfinished and unpublished in Kant’s lifetime, and scholars disagree on their significance and relation to his earlier work. It is clear, however, that some of these late notes show unmistakable signs of Kant’s mental decline, which became tragically precipitous around 1800. Kant died February 12, 1804, just short of his eightieth birthday."#,
+    ));
     let blocks = bytewise::make_blocks(&plain_t, 16);
     let num_total = blocks.len();
     let mut num_uniques = 0;
@@ -290,7 +327,7 @@ Kant retired from teaching in 1796. For nearly two decades he had lived a highly
         let mut unique = true;
         for j in 0..blocks.len() {
             if i == j {
-                continue
+                continue;
             } else if blocks[i] == blocks[j] {
                 unique = false;
             }
@@ -299,7 +336,10 @@ Kant retired from teaching in 1796. For nearly two decades he had lived a highly
             num_uniques += 1;
         }
     }
-    println!("There were {} uniques out of {} total.", num_uniques, num_total);
+    println!(
+        "There were {} uniques out of {} total.",
+        num_uniques, num_total
+    );
     let guesses = 100;
     let mut guesses_right = 0.0;
     for _ in 0..guesses {
@@ -313,7 +353,10 @@ Kant retired from teaching in 1796. For nearly two decades he had lived a highly
             guesses_right += 1.0;
         }
     }
-    println!("Guessed {:.1}% of attempts correctly", (guesses_right / guesses as f64) * 100.0);
+    println!(
+        "Guessed {:.1}% of attempts correctly",
+        (guesses_right / guesses as f64) * 100.0
+    );
 }
 
 pub fn set_twelve() {
@@ -335,7 +378,8 @@ pub fn set_twelve() {
             break;
         }
         for _ in 0..block_size {
-            let new_letter = attack_aes::find_next_byte(&known_prefix, &secret_suffix, &key, 0, block_size);
+            let new_letter =
+                attack_aes::find_next_byte(&known_prefix, &secret_suffix, &key, 0, block_size);
             known_prefix.push(new_letter);
         }
         print!("{}", bytewise::to_ascii(&known_prefix));
@@ -345,12 +389,12 @@ pub fn set_twelve() {
                 secret_suffix.pop();
             } else if secret_suffix.len() == block_size {
                 last_time = true;
-                break
+                break;
             }
         }
         secret_suffix.reverse();
         if secret_suffix.len() == 0 {
-            break
+            break;
         }
         known_prefix = Vec::new();
     }
@@ -363,8 +407,14 @@ pub fn set_thirteen() {
         Ok(parsed) => parsed,
         Err(e) => panic!("{}", e),
     };
-    let pairs_as_hashmap: HashMap<String, String> = [(String::from("foo"), String::from("bar")), (String::from("baz"), String::from("qux")), (String::from("zap"), String::from("zazzle"))]
-        .iter().cloned().collect();
+    let pairs_as_hashmap: HashMap<String, String> = [
+        (String::from("foo"), String::from("bar")),
+        (String::from("baz"), String::from("qux")),
+        (String::from("zap"), String::from("zazzle")),
+    ]
+    .iter()
+    .cloned()
+    .collect();
     assert_eq!(parsed, pairs_as_hashmap);
 
     // check that the profile-construction works
@@ -373,8 +423,14 @@ pub fn set_thirteen() {
         Ok(parsed) => parsed,
         Err(e) => panic!("{}", e),
     };
-    let profile_as_hashmap: HashMap<String, String> = [(String::from("email"), String::from("foo@bar.com")), (String::from("uid"), String::from("10")), (String::from("role"), String::from("user"))]
-        .iter().cloned().collect();
+    let profile_as_hashmap: HashMap<String, String> = [
+        (String::from("email"), String::from("foo@bar.com")),
+        (String::from("uid"), String::from("10")),
+        (String::from("role"), String::from("user")),
+    ]
+    .iter()
+    .cloned()
+    .collect();
     assert_eq!(parsed_profile, profile_as_hashmap);
 
     // check that encrypting a profile and decrypting it works
@@ -395,10 +451,12 @@ pub fn set_thirteen() {
     let dastardly_email: &str = "6789012345admin___________@bar.com";
     let dastardly_parsed = param_parse::profile_for(dastardly_email);
     let dastardly_plain: Vec<u8> = bytewise::from_ascii(&dastardly_parsed)
-        .iter().map(|&x| match x {
+        .iter()
+        .map(|&x| match x {
             95 => 11,
             n => n,
-        }).collect();
+        })
+        .collect();
     let dastardly_cipher = aes::encrypt_ecb(&dastardly_plain, &key);
     // we will use this block, which contains the encrypted version of "adminXXXXXXXXXXX",
     // where X is the PKCS5 padding value, to construct a malicious ciphertext.
@@ -417,7 +475,6 @@ pub fn set_thirteen() {
     let user_role = &param_parse::parse_params(&plain_admin).unwrap()["role"];
     assert_eq!(user_role, "admin");
 }
-
 
 pub fn set_fourteen() {
     let key = bytewise::make_rand_vec(16);

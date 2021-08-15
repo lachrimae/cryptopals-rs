@@ -27,10 +27,10 @@ const ENG_FREQS: [(char, f64); 26] = [
     ('w', 0.024),
     ('x', 0.0015),
     ('y', 0.02),
-    ('z', 0.00074)
+    ('z', 0.00074),
 ];
 
-pub fn eng_score(eng_passage:String, _euclidean:bool) -> f64 {
+pub fn eng_score(eng_passage: String, _euclidean: bool) -> f64 {
     assert_ne!(eng_passage.len(), 0);
     let mut eng_freqs: HashMap<char, f64> = HashMap::with_capacity(26);
     for (c, freq) in ENG_FREQS.iter() {
@@ -47,24 +47,26 @@ pub fn eng_score(eng_passage:String, _euclidean:bool) -> f64 {
     for (c, _) in ENG_FREQS.iter() {
         let current_entry = *passage_freqs.entry(*c).or_insert(0.0);
         passage_freqs.insert(*c, current_entry / total);
-        let delta =  *passage_freqs.entry(*c).or_insert(0.0) - *eng_freqs.entry(*c).or_insert(0.0);
+        let delta = *passage_freqs.entry(*c).or_insert(0.0) - *eng_freqs.entry(*c).or_insert(0.0);
         dist += delta.abs();
     }
     dist
 }
 
-pub fn eng_score_old(eng_passage:String, euclidean:bool) -> f64 {
+pub fn eng_score_old(eng_passage: String, euclidean: bool) -> f64 {
     assert_ne!(eng_passage.len(), 0);
-    let punct_cost = 1.0 * (eng_passage
-        .chars()
-        .filter(|c| !c.is_ascii())
-        .collect::<String>()
-        .len() as f64);
+    let punct_cost = 1.0
+        * (eng_passage
+            .chars()
+            .filter(|c| !c.is_ascii())
+            .collect::<String>()
+            .len() as f64);
     let no_spaces_present = eng_passage
         .chars()
         .filter(|c| *c == ' ')
         .collect::<String>()
-        .len() == 0;
+        .len()
+        == 0;
     let no_spaces_cost = if no_spaces_present { 5.0 } else { 0.0 };
     let uppercase_rate = eng_passage
         .chars()
@@ -78,7 +80,9 @@ pub fn eng_score_old(eng_passage:String, euclidean:bool) -> f64 {
         .chars()
         .filter(char::is_ascii_lowercase)
         .collect();
-    if eng_passage.len() == 0 { return 20.0 }
+    if eng_passage.len() == 0 {
+        return 20.0;
+    }
     let mut eng_freqs: HashMap<char, f64> = HashMap::with_capacity(26);
     for (c, freq) in ENG_FREQS.iter() {
         eng_freqs.insert(*c, *freq);
@@ -94,7 +98,7 @@ pub fn eng_score_old(eng_passage:String, euclidean:bool) -> f64 {
     for (c, _) in ENG_FREQS.iter() {
         let current_entry = *passage_freqs.entry(*c).or_insert(0.0);
         passage_freqs.insert(*c, current_entry / total);
-        let incr =  *passage_freqs.entry(*c).or_insert(0.0) - *eng_freqs.entry(*c).or_insert(0.0);
+        let incr = *passage_freqs.entry(*c).or_insert(0.0) - *eng_freqs.entry(*c).or_insert(0.0);
         let incr = if euclidean {
             incr.powf(2.0)
         } else {
@@ -102,9 +106,5 @@ pub fn eng_score_old(eng_passage:String, euclidean:bool) -> f64 {
         };
         dist += incr;
     }
-    uppercase_cost + punct_cost + no_spaces_cost + if euclidean {
-        dist.sqrt()
-    } else {
-        dist
-    }
+    uppercase_cost + punct_cost + no_spaces_cost + if euclidean { dist.sqrt() } else { dist }
 }
