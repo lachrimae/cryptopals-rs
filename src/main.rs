@@ -41,6 +41,7 @@ fn main() {
         Some("11") => set_eleven(),
         Some("12") => set_twelve(),
         Some("13") => set_thirteen(),
+        Some("14") => set_fourteen(),
         _ => {
             set_one();
             set_two();
@@ -55,6 +56,7 @@ fn main() {
             set_eleven();
             set_twelve();
             set_thirteen();
+            set_fourteen();
         }
     }
 }
@@ -479,14 +481,62 @@ pub fn set_thirteen() {
 pub fn set_fourteen() {
     let key = bytewise::make_rand_vec(16);
 
-    fn encrypt(plain_t: &Vec<u8>, key: &Vec<u8>) -> Vec<u8> {
+    fn encrypt_with_prefix(plain_t: Vec<u8>, key: &Vec<u8>) -> Vec<u8> {
         let prefix_len: u8 = 5u8 + ((rand::random(): u8) % 6u8);
         let prefix = bytewise::make_rand_vec(prefix_len as usize);
-        aes::encrypt_ecb_appended(&prefix, plain_t, key)
+        aes::encrypt_ecb_appended(&prefix, &plain_t, key)
     }
-    fn attack_encrypter(mut attacker_controlled: Vec<u8>, key: &Vec<u8>) -> Vec<u8> {
+    fn attack_encrypter(attacker_controlled: &Vec<u8>, key: &Vec<u8>) -> Vec<u8> {
         let secret_suffix = b64::from_b64(String::from("Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkgaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBqdXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK"));
-        attacker_controlled.extend(secret_suffix.iter().cloned());
-        encrypt(&attacker_controlled, key)
+        let mut cloned = attacker_controlled.clone();
+        cloned.extend(secret_suffix.iter().cloned());
+        encrypt_with_prefix(cloned, key)
     }
+
+    // twice the size of a block should be sufficient
+    let mut padding = vec![0; 32usize];
+    let padding_encrypted = &attack_encrypter(&padding, &key)[16..32];
+
+    // reduce the size of the padding until we start hitting the suffix
+    let mut encountered_suffix = false;
+    loop {
+        padding.pop();
+        // hit the random prefix 100 times... there is a very low chance
+        // of missing if we have hit the suffix
+        for _ in 0..100 {
+            let encrypted = attack_encrypter(&padding, &key);
+            if encrypted[16..32] != *padding_encrypted {
+                encountered_suffix = true;
+                break;
+            }
+        }
+        if encountered_suffix {
+            break;
+        }
+    }
+    println!("length of padding: {}", padding.len());
+
+    let current_ciphertext = &(attack_encrypter(&padding, &key)[16..32]);
+    for _ in 0..padding.len() {
+      for i in 0u8..=255u8 {
+          padding.push(i);
+          let mut i_is_the_right_value = false;
+          for _ in 0..100 {
+              let tentative_match = &attack_encrypter(&padding, &key)[16..32];
+              if *tentative_match == *current_ciphertext {
+                  i_is_the_right_value = true;
+                  break;
+              }
+          }
+          if i_is_the_right_value {
+              break;
+          }
+          padding.pop();
+      }
+      padding.reverse();
+      padding.pop();
+      padding.reverse();
+    }
+    println!("First char: {}", bytewise::to_ascii(&padding));
+    println!("First char: {:?}", &padding);
 }
