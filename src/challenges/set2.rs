@@ -314,3 +314,59 @@ pub fn set_fourteen() {
     println!("First char: {}", bytewise::to_ascii(&padding));
     println!("First char: {:?}", &padding);
 }
+
+pub fn set_sixteen() {
+    fn insert_and_encrypt(infix: &str, key: &Vec<u8>) -> Vec<u8> {
+        let mut s = String::from("comment1=cooking%20MCs;userdata=");
+        for c in infix.chars() {
+            match c {
+                ';' => s.push_str("%3B"),
+                '=' => s.push_str("%3D"),
+                _ => s.push(c),
+            }
+        }
+        s.push_str(";comment2=%20like%20a%20pound%20of%20bacon");
+        let as_bytes = bytewise::from_ascii(&s);
+        let encrypted = aes::encrypt_cbc(&as_bytes, &key, &vec![0; 16usize]);
+        encrypted
+    }
+
+    fn decrypt_and_parse(cipher_t: &Vec<u8>, key: &Vec<u8>) -> bool {
+        let decrypted = aes::decrypt_cbc(cipher_t, &key, &vec![0; 16usize]);
+        println!("{:?}", &decrypted[16..16 + 12]);
+        let as_ascii = bytewise::to_ascii(&decrypted);
+        as_ascii.contains(";admin=true;")
+    }
+
+    let key = bytewise::make_rand_vec(16);
+    let desired_string = bytewise::from_ascii(&String::from(";admin=true;"));
+
+    //     prefix          blank        blank            suffix
+    // pppppppppppppp / ggggggggggg / bbbbbbbbbbbbb / sssssssssssssss
+    //
+    // The plan is to insert some kind of arbitrary padding data to the insert_and_encrypt
+    // block, then to apply
+    //   garbled[i] <- not(xor(b_char, desired_string[i]))
+    // to the first few elements of the ciphertext of garbled.
+    // Hopefully feeding that second plaintext into the function will create the desired
+    // corrupted plaintext on the other side.
+    let double_block_null = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+    let double_block_not_quite_null = "a\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+    let encrypted_nulls = insert_and_encrypt(double_block_null, &key);
+    let encrypted_not_quite_nulls = insert_and_encrypt(double_block_not_quite_null, &key);
+    let mut index_at_which_ciphertexts_differ = 0;
+    while encrypted_nulls[index_at_which_ciphertexts_differ] != encrypted_not_quite_nulls[index_at_which_ciphertexts_differ] {
+        index_at_which_ciphertexts_differ += 1;
+    }
+    let target_block = &encrypted_nulls[(index_at_which_ciphertexts_differ + 16)..(index_at_which_ciphertexts_differ + 16 + desired_string.len())];
+    println!("{:?}", target_block);
+    let mut hostile_block = Vec::new();
+    for (i, c) in target_block.iter().enumerate() {
+        hostile_block.push(desired_string[i] ^ c);
+    while hostile_block.len() < 32 {
+        hostile_block.push(0);
+    }
+    println!("length of hostile: {}", hostile_block.len());
+    let as_chars = bytewise::to_ascii(&hostile_block);
+    assert!(decrypt_and_parse(&insert_and_encrypt(&as_chars, &key), &key))
+}
