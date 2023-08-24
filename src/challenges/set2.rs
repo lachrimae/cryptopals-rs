@@ -235,7 +235,7 @@ pub fn set_fourteen() {
     let key = bytewise::make_rand_vec(16);
 
     fn encrypt_with_prefix(plain_t: Vec<u8>, key: &Vec<u8>) -> Vec<u8> {
-        let prefix_len: u8 = 5u8 + ((rand::random(): u8) % 6u8);
+        let prefix_len: u8 = 5u8 + ((rand::random::<u8>()) % 6u8);
         let prefix = bytewise::make_rand_vec(prefix_len as usize);
         aes::encrypt_ecb_appended(&prefix, &plain_t, key)
     }
@@ -289,27 +289,29 @@ pub fn set_fourteen() {
     //
     // The only complication to this is that we have to rerun things a bunch of
     // times so we make sure we don't miss any max-length prefixes.
-    padding.pop(); padding.pop(); padding.pop();
+    padding.pop();
+    padding.pop();
+    padding.pop();
     let current_ciphertext = &(attack_encrypter(&padding, &key)[16..32]);
     for _ in 0..padding.len() {
-      for i in 0u8..=255u8 {
-          padding.push(i);
-          let mut i_is_the_right_value = false;
-          for _ in 0..100 {
-              let tentative_match = &attack_encrypter(&padding, &key)[16..32];
-              if *tentative_match == *current_ciphertext {
-                  i_is_the_right_value = true;
-                  break;
-              }
-          }
-          if i_is_the_right_value {
-              break;
-          }
-          padding.pop();
-      }
-      padding.reverse();
-      padding.pop();
-      padding.reverse();
+        for i in 0u8..=255u8 {
+            padding.push(i);
+            let mut i_is_the_right_value = false;
+            for _ in 0..100 {
+                let tentative_match = &attack_encrypter(&padding, &key)[16..32];
+                if *tentative_match == *current_ciphertext {
+                    i_is_the_right_value = true;
+                    break;
+                }
+            }
+            if i_is_the_right_value {
+                break;
+            }
+            padding.pop();
+        }
+        padding.reverse();
+        padding.pop();
+        padding.reverse();
     }
     println!("First char: {}", bytewise::to_ascii(&padding));
     println!("First char: {:?}", &padding);
@@ -351,22 +353,30 @@ pub fn set_sixteen() {
     // Hopefully feeding that second plaintext into the function will create the desired
     // corrupted plaintext on the other side.
     let double_block_null = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
-    let double_block_not_quite_null = "a\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+    let double_block_not_quite_null =
+        "a\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
     let encrypted_nulls = insert_and_encrypt(double_block_null, &key);
     let encrypted_not_quite_nulls = insert_and_encrypt(double_block_not_quite_null, &key);
     let mut index_at_which_ciphertexts_differ = 0;
-    while encrypted_nulls[index_at_which_ciphertexts_differ] != encrypted_not_quite_nulls[index_at_which_ciphertexts_differ] {
+    while encrypted_nulls[index_at_which_ciphertexts_differ]
+        != encrypted_not_quite_nulls[index_at_which_ciphertexts_differ]
+    {
         index_at_which_ciphertexts_differ += 1;
     }
-    let target_block = &encrypted_nulls[(index_at_which_ciphertexts_differ + 16)..(index_at_which_ciphertexts_differ + 16 + desired_string.len())];
+    let target_block = &encrypted_nulls[(index_at_which_ciphertexts_differ + 16)
+        ..(index_at_which_ciphertexts_differ + 16 + desired_string.len())];
     println!("{:?}", target_block);
     let mut hostile_block = Vec::new();
     for (i, c) in target_block.iter().enumerate() {
         hostile_block.push(desired_string[i] ^ c);
+    }
     while hostile_block.len() < 32 {
         hostile_block.push(0);
     }
     println!("length of hostile: {}", hostile_block.len());
     let as_chars = bytewise::to_ascii(&hostile_block);
-    assert!(decrypt_and_parse(&insert_and_encrypt(&as_chars, &key), &key))
+    assert!(decrypt_and_parse(
+        &insert_and_encrypt(&as_chars, &key),
+        &key
+    ))
 }

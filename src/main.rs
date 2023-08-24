@@ -1,7 +1,5 @@
-#![feature(type_ascription)]
-
-mod cryptopals;
 mod challenges;
+mod cryptopals;
 
 #[macro_use]
 extern crate clap;
@@ -33,7 +31,8 @@ fn main() {
         Some("12") => set_twelve(),
         Some("13") => set_thirteen(),
         Some("14") => set_fourteen(),
-        Some("16") => set_sixteen(),
+        // TODO: finish
+        // Some("16") => set_sixteen(),
         _ => {
             set_one();
             set_two();
@@ -49,7 +48,8 @@ fn main() {
             set_twelve();
             set_thirteen();
             set_fourteen();
-            set_sixteen();
+            // TODO: finish
+            // set_sixteen();
         }
     }
 }
